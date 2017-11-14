@@ -5,7 +5,7 @@
 
 Imports mnist tutorial libraries used by tutorial examples.
 
-Trains and Evaluates the MNIST network using a feed dictionary."""
+Trains and Evaluates the mnist network using a feed dictionary."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,7 +20,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
 from tensorflow.examples.tutorials.mnist import input_data
-from MNIST import mnist
+from mnist import mnist
 
 # Basic model parameters as external flags.
 FLAGS = None
@@ -53,7 +53,7 @@ def fill_feed_dict(data_set, images_pl, labels_pl):
         ....
     }
     Args:
-      data_set: The set of images and labels, from input_data.read_data_sets()
+      data_set: The set of images and labels, from data.read_data_sets()
       images_pl: The images placeholder, from placeholder_inputs().
       labels_pl: The labels placeholder, from placeholder_inputs().
     Returns:
@@ -82,7 +82,7 @@ def do_eval(sess,
       images_placeholder: The images placeholder.
       labels_placeholder: The labels placeholder.
       data_set: The set of images and labels to evaluate, from
-        input_data.read_data_sets().
+        data.read_data_sets().
     """
     # And run one epoch of eval.
     true_count = 0  # Counts the number of correct predictions.
@@ -99,9 +99,9 @@ def do_eval(sess,
 
 
 def run_training():
-    """Train MNIST for a number of steps."""
+    """Train mnist for a number of steps."""
     # Get the sets of images and labels for training, validation, and
-    # test on MNIST.
+    # test on mnist.
     data_sets = input_data.read_data_sets(FLAGS.input_data_dir, FLAGS.fake_data)
 
     # Tell TensorFlow that the model will be built into the default Graph.
@@ -237,7 +237,7 @@ if __name__ == '__main__':
         '--input_data_dir',
         type=str,
         default=os.path.join(os.getenv('TEST_TMPDIR', '/tmp'),
-                             'tensorflow/mnist/input_data'),
+                             'tensorflow/mnist/data'),
         help='Directory to put the input data.'
     )
     parser.add_argument(

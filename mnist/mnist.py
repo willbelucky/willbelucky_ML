@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Builds the MNIST network.
+"""Builds the mnist network.
 
 Implements the inference/loss/training pattern for model building.
 
@@ -34,16 +34,16 @@ import math
 
 import tensorflow as tf
 
-# The MNIST dataset has 10 classes, representing the digits 0 through 9.
+# The mnist dataset has 10 classes, representing the digits 0 through 9.
 NUM_CLASSES = 10
 
-# The MNIST images are always 28x28 pixels.
+# The mnist images are always 28x28 pixels.
 IMAGE_SIZE = 28
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 
 def inference(images, hidden_units):
-    """Build the MNIST model up to where it may be used for inference.
+    """Build the mnist model up to where it may be used for inference.
 
     Args:
       images: Images placeholder, from inputs().
