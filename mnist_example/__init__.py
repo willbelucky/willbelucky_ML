@@ -3,9 +3,9 @@
 :Author: Jaekyoung Kim
 :Date: 2017. 11. 11.
 
-Imports mnist tutorial libraries used by tutorial examples.
+Imports mnist_example tutorial libraries used by tutorial examples.
 
-Trains and Evaluates the mnist network using a feed dictionary."""
+Trains and Evaluates the mnist_example network using a feed dictionary."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,7 +20,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
 from tensorflow.examples.tutorials.mnist import input_data
-from mnist import mnist
+from mnist_example import mnist
 
 # Basic model parameters as external flags.
 FLAGS = None
@@ -99,9 +99,9 @@ def do_eval(sess,
 
 
 def run_training():
-    """Train mnist for a number of steps."""
+    """Train mnist_example for a number of steps."""
     # Get the sets of images and labels for training, validation, and
-    # test on mnist.
+    # test on mnist_example.
     data_sets = input_data.read_data_sets(FLAGS.input_data_dir, FLAGS.fake_data)
 
     # Tell TensorFlow that the model will be built into the default Graph.
@@ -237,14 +237,14 @@ if __name__ == '__main__':
         '--input_data_dir',
         type=str,
         default=os.path.join(os.getenv('TEST_TMPDIR', '/tmp'),
-                             'tensorflow/mnist/data'),
+                             'tensorflow/mnist_example/data'),
         help='Directory to put the input data.'
     )
     parser.add_argument(
         '--log_dir',
         type=str,
         default=os.path.join(os.getenv('TEST_TMPDIR', '/tmp'),
-                             'tensorflow/mnist/logs/fully_connected_feed'),
+                             'tensorflow/mnist_example/logs/fully_connected_feed'),
         help='Directory to put the log data.'
     )
     parser.add_argument(

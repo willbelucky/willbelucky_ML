@@ -7,5 +7,5 @@
 lezhin/__pycache__/__init__.cpython-36.pyc
 lezhin/__pycache__/input_data.cpython-36.pyc
 logs/
-mnist/__pycache__/
+mnist_example/__pycache__/
 util/__pycache__/

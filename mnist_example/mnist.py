@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Builds the mnist network.
+"""Builds the mnist_example network.
 
 Implements the inference/loss/training pattern for model building.
 
@@ -34,16 +34,16 @@ import math
 
 import tensorflow as tf
 
-# The mnist dataset has 10 classes, representing the digits 0 through 9.
+# The mnist_example dataset has 10 classes, representing the digits 0 through 9.
 NUM_CLASSES = 10
 
-# The mnist images are always 28x28 pixels.
+# The mnist_example images are always 28x28 pixels.
 IMAGE_SIZE = 28
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 
 def inference(images, hidden_units):
-    """Build the mnist model up to where it may be used for inference.
+    """Build the mnist_example model up to where it may be used for inference.
 
     Args:
       images: Images placeholder, from inputs().
@@ -54,6 +54,7 @@ def inference(images, hidden_units):
     """
     pre_unit = IMAGE_PIXELS
     pre_layer = images
+    hidden_layer = None
     for i, hidden_unit in enumerate(hidden_units):
         # Hidden n
         with tf.name_scope('hidden{}'.format(i + 1)):
