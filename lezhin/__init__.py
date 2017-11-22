@@ -149,6 +149,7 @@ def run_training():
                       'validation_num_examples', 'validation_true_count', 'validation_precision', 'test_num_examples',
                       'test_true_count', 'test_precision']))
         # Start the training loop.
+        pre_training_precision = 0
         for step in range(FLAGS.max_steps):
             # start_time = time.time()
 
@@ -204,6 +205,11 @@ def run_training():
                                                                                             test_num_examples,
                                                                                             test_true_count,
                                                                                             test_precision))
+                if pre_training_precision > training_precision:
+                    logger.info("training_precision is getting low.")
+                    break
+
+                pre_training_precision = training_precision
 
 
 def main(_):

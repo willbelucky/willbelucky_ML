@@ -3,7 +3,7 @@
 :Author: Jaekyoung Kim
 :Date: 2017. 11. 11.
 """
-import numpy
+import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.contrib.learn.python.learn.datasets import base
@@ -32,7 +32,7 @@ class DataSet(object):
         """
         seed1, seed2 = random_seed.get_seed(seed)
         # If op level seed is not set, use whatever graph level seed is returned
-        numpy.random.seed(seed1 if seed is None else seed2)
+        np.random.seed(seed1 if seed is None else seed2)
         dtype = dtypes.as_dtype(dtype).base_dtype
         if dtype not in (dtypes.uint8, dtypes.float32):
             raise TypeError('Invalid unit dtype %r, expected uint8 or float32' %
@@ -79,8 +79,8 @@ class DataSet(object):
         start = self._index_in_epoch
         # Shuffle for the first epoch
         if self._epochs_completed == 0 and start == 0 and shuffle:
-            perm0 = numpy.arange(self._num_examples)
-            numpy.random.shuffle(perm0)
+            perm0 = np.arange(self._num_examples)
+            np.random.shuffle(perm0)
             self._units = self.units.iloc[perm0]
             self._labels = self.labels[perm0]
         # Go to the next epoch
@@ -93,8 +93,8 @@ class DataSet(object):
             labels_rest_part = self._labels[start:self._num_examples]
             # Shuffle the data
             if shuffle:
-                perm = numpy.arange(self._num_examples)
-                numpy.random.shuffle(perm)
+                perm = np.arange(self._num_examples)
+                np.random.shuffle(perm)
                 self._units = self.units.iloc[perm]
                 self._labels = self.labels[perm]
             # Start next epoch
@@ -103,7 +103,7 @@ class DataSet(object):
             end = self._index_in_epoch
             units_new_part = self._units[start:end]
             labels_new_part = self._labels[start:end]
-            return numpy.concatenate((units_rest_part, units_new_part), axis=0), numpy.concatenate(
+            return np.concatenate((units_rest_part, units_new_part), axis=0), np.concatenate(
                 (labels_rest_part, labels_new_part), axis=0)
         else:
             self._index_in_epoch += batch_size
@@ -112,6 +112,8 @@ class DataSet(object):
 
 
 CATEGORICAL_UNITS = [6, 7, 9]
+PRODUCT_UNIT = 7
+PURCHASE_HISTORY_UNITS = [x for x in range(11, 111)]
 
 
 def read_data_sets(train_dir,
@@ -142,6 +144,14 @@ def read_data_sets(train_dir,
     test_units[CATEGORICAL_UNITS] = test_units[CATEGORICAL_UNITS].fillna(value='00000000')
     test_units = test_units.fillna(value=0.0)
     test_labels = test_units.pop(0).values
+
+    # content_labels = set(list(test_units[7].append(train_units[7])))
+    # for content_label in content_labels:
+    #     for unit in PURCHASE_HISTORY_UNITS:
+    #         train_units[content_label + str(unit)] = train_units[unit]*(train_units[PRODUCT_UNIT] == content_label)
+    #         test_units[content_label + str(unit)] = test_units[unit]*(test_units[PRODUCT_UNIT] == content_label)
+    #         train_units = train_units.drop(PURCHASE_HISTORY_UNITS, axis=1)
+    #         test_units = test_units.drop(PURCHASE_HISTORY_UNITS, axis=1)
 
     for var in CATEGORICAL_UNITS:
         le = LabelEncoder().fit(train_units[var].append(test_units[var]))
