@@ -9,8 +9,8 @@ from tensorflow.contrib.learn.python.learn.datasets import base
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 
-# result is a profit rate.
-NUM_CLASSES = 3
+# number of category.
+NUM_CLASSES = 2
 
 # The stock units are PER, PBR, and PSR.
 UNIT_NUMBER = 3
@@ -128,28 +128,10 @@ class DataSet(object):
 
 
 def label_profit(profit):
-    # if profit < -0.75:
-    #     label = 0
-    # elif profit < -0.5:
-    #     label = 1
-    # elif profit < -0.25:
-    #     label = 2
-    # elif profit < 0:
-    #     label = 3
-    # elif profit < 0.25:
-    #     label = 4
-    # elif profit < 0.5:
-    #     label = 5
-    # elif profit < 0.75:
-    #     label = 6
-    # else:
-    #     label = 7
-    if profit < -0.1:
+    if profit < 0:
         label = 0
-    elif profit < 0.1:
-        label = 1
     else:
-        label = 2
+        label = 1
     return label
 
 
@@ -170,7 +152,6 @@ def read_data(fake_data=False,
         return base.Datasets(train=train, validation=validation, test=test)
 
     stock_data = pd.read_csv('stock_data_set.csv').dropna()
-    stock_data['profit'] = stock_data['profit'] / 100
     stock_data['label'] = stock_data['profit'].apply(label_profit)
     stock_data = stock_data.set_index(['company', 'year'])
     stock_data = stock_data.sample(frac=1)
