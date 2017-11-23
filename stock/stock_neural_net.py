@@ -208,7 +208,7 @@ def run_training():
 
     # Get the sets of units and labels for training, validation, and
     # test on mnist_example.
-    data_sets = read_data()
+    data_sets = read_data(test_rate=FLAGS.test_rate, validation_rate=FLAGS.validation_rate)
 
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
@@ -348,6 +348,18 @@ if __name__ == '__main__':
         type=int,
         default=100,
         help='Batch size.  Must divide evenly into the dataset sizes.'
+    )
+    parser.add_argument(
+        '--validation_rate',
+        type=float,
+        default=0.1,
+        help='Validation rate. The portion of validate set.'
+    )
+    parser.add_argument(
+        '--test_rate',
+        type=float,
+        default=0.25,
+        help='Test rate. The portion of test set.'
     )
     parser.add_argument(
         '--log_dir',

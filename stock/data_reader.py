@@ -162,6 +162,9 @@ def read_data(fake_data=False,
     test_size = int(len(stock_data) * test_rate)
     validation_size = int(len(stock_data) * validation_rate)
 
+    assert test_size > 0
+    assert validation_size > 0
+
     test_units = units[:test_size]
     validation_units = units[test_size:test_size + validation_size]
     train_units = units[test_size + validation_size:]
