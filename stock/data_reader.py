@@ -143,7 +143,6 @@ def label_profit(profit):
     return label
 
 
-# The stock units are PER, PBR, and PSR.
 UNIT_NAMES = ['INTEREST', 'GAS', 'ROE', 'EPS', 'BPS', 'PER', 'PBR', 'PSR', 'DR', 'ASSET', 'SALES', 'OPERATION_PROFIT',
               'CASH_FLOW']
 UNIT_NUMBER = len(UNIT_NAMES)
