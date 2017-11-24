@@ -9,26 +9,30 @@ from tensorflow.contrib.learn.python.learn.datasets import base
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 
-# number of category.
-NUM_CLASSES = 2
 
-# The stock units are PER, PBR, and PSR.
-UNIT_NUMBER = 3
-
-
-def read_data():
+def read_csv(file_name):
     """
-    Read data from stock_data_set.csv and return it as DataFrame.
+    Read data from FE539.csv and return it as DataFrame.
 
     :return stock_data: (DataFrame)
-        index       company | (string)
-                    year    | (string)
-        columns     per     | (float)
-                    pbr     | (float)
-                    psr     | (float)
-                    profit  | (float)
+        index       company             | (string)
+                    year                | (int)
+        columns     INTEREST            | (float)
+                    GAS                 | (float)
+                    PROFIT              | (float)
+                    ROE                 | (float)
+                    EPS                 | (float)
+                    BPS                 | (float)
+                    PER                 | (float)
+                    PBR                 | (float)
+                    PSR                 | (float)
+                    DR                  | (float)
+                    ASSET               | (float)
+                    SALES               | (float)
+                    OPERATION_PROFIT    | (float)
+                    CASH_FLOW           | (float)
     """
-    stock_data = pd.read_csv('stock_data_set.csv').dropna()
+    stock_data = pd.read_csv(file_name).dropna()
     stock_data = stock_data.set_index(['company', 'year'])
     return stock_data
 
@@ -127,12 +131,22 @@ class DataSet(object):
             return self._units[start:end], self._labels[start:end]
 
 
+# number of category.
+NUM_CLASSES = 2
+
+
 def label_profit(profit):
-    if profit < 0:
+    if profit < 0.0:
         label = 0
     else:
         label = 1
     return label
+
+
+# The stock units are PER, PBR, and PSR.
+UNIT_NAMES = ['INTEREST', 'GAS', 'ROE', 'EPS', 'BPS', 'PER', 'PBR', 'PSR', 'DR', 'ASSET', 'SALES', 'OPERATION_PROFIT',
+              'CASH_FLOW']
+UNIT_NUMBER = len(UNIT_NAMES)
 
 
 def read_data(fake_data=False,
@@ -151,12 +165,14 @@ def read_data(fake_data=False,
         test = fake()
         return base.Datasets(train=train, validation=validation, test=test)
 
-    stock_data = pd.read_csv('stock_data_set.csv').dropna()
-    stock_data['label'] = stock_data['profit'].apply(label_profit)
-    stock_data = stock_data.set_index(['company', 'year'])
+    # len(>0.0) = 2475, len(<=0.0) = 2385, total = 4860
+    stock_data = read_csv('FE539.csv')
+    stock_data['label'] = stock_data['PROFIT'].apply(label_profit)
+    for unit_name in UNIT_NAMES:
+        stock_data[unit_name] = stock_data[unit_name] / stock_data[unit_name].mean()
     stock_data = stock_data.sample(frac=1)
 
-    units = stock_data[['per', 'pbr', 'psr']]
+    units = stock_data[UNIT_NAMES]
     labels = stock_data['label'].values
 
     test_size = int(len(stock_data) * test_rate)

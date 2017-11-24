@@ -327,20 +327,20 @@ if __name__ == '__main__':
     parser.add_argument(
         '--dropout',
         type=float,
-        default=None,
+        default=0.5,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
     )
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=8000,
+        default=200000,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[300, 600, 150, 75],
+        default=[260, 130, 26],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(
