@@ -17,7 +17,7 @@ NOTSET = 0
 
 def get_logger(logger_name, log_dir, file_name, level):
     logger = lg.getLogger(logger_name)
-    fomatter = lg.Formatter('[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s > %(message)s')
+    fomatter = lg.Formatter('[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s >\t%(message)s')
 
     # 스트림과 파일로 로그를 출력하는 핸들러를 각각 만든다.
     file_handler = lg.FileHandler(log_dir + '/' + file_name + '.log')

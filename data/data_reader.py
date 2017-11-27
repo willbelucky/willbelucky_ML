@@ -1,46 +1,29 @@
 # -*- coding: utf-8 -*-
 """
 :Author: Jaekyoung Kim
-:Date: 2017. 11. 22.
+:Date: 2017. 11. 27.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import collections
+
 import numpy as np
 import pandas as pd
-from tensorflow.contrib.learn.python.learn.datasets import base
+from sklearn.preprocessing import MinMaxScaler
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 
-
-def read_csv(file_name):
-    """
-    Read data from FE539.csv and return it as DataFrame.
-
-    :return stock_data: (DataFrame)
-        index       company             | (string)
-                    year                | (int)
-        columns     INTEREST            | (float)
-                    GAS                 | (float)
-                    PROFIT              | (float)
-                    ROE                 | (float)
-                    EPS                 | (float)
-                    BPS                 | (float)
-                    PER                 | (float)
-                    PBR                 | (float)
-                    PSR                 | (float)
-                    DR                  | (float)
-                    ASSET               | (float)
-                    SALES               | (float)
-                    OPERATION_PROFIT    | (float)
-                    CASH_FLOW           | (float)
-    """
-    stock_data = pd.read_csv(file_name).dropna()
-    stock_data = stock_data.set_index(['company', 'year'])
-    return stock_data
+DATASETS = collections.namedtuple('Datasets', ['train', 'validation', 'test', 'column_number', 'class_number'])
 
 
 class DataSet(object):
     def __init__(self,
                  units,
                  labels,
+                 column_number,
+                 class_number,
                  fake_data=False,
                  one_hot=False,
                  dtype=dtypes.float32,
@@ -68,6 +51,8 @@ class DataSet(object):
         self._labels = labels
         self._epochs_completed = 0
         self._index_in_epoch = 0
+        self.column_number = column_number
+        self.class_number = class_number
 
     @property
     def units(self):
@@ -88,7 +73,7 @@ class DataSet(object):
     def next_batch(self, batch_size, fake_data=False, shuffle=True):
         """Return the next `batch_size` examples from this data set."""
         if fake_data:
-            fake_unit = [1] * UNIT_NUMBER
+            fake_unit = [1] * self.column_number
             if self.one_hot:
                 fake_label = 1
             else:
@@ -131,24 +116,22 @@ class DataSet(object):
             return self._units[start:end], self._labels[start:end]
 
 
-# number of category.
-NUM_CLASSES = 2
+def read_csv(file_name):
+    """
+    Read data from file_name.csv and return it as DataFrame without null value.
+
+    :return stock_data: (DataFrame)
+    """
+    stock_data = pd.read_csv(file_name + '.csv').dropna()
+    return stock_data
 
 
-def label_profit(profit):
-    if profit < 0.0:
-        label = 0
-    else:
-        label = 1
-    return label
-
-
-UNIT_NAMES = ['INTEREST', 'GAS', 'ROE', 'EPS', 'BPS', 'PER', 'PBR', 'PSR', 'DR', 'ASSET', 'SALES', 'OPERATION_PROFIT',
-              'CASH_FLOW']
-UNIT_NUMBER = len(UNIT_NAMES)
-
-
-def read_data(fake_data=False,
+def read_data(file_name,
+              label_name,
+              columns,
+              class_number,
+              label_profit,
+              fake_data=False,
               test_rate=0.25,
               validation_rate=0.1,
               one_hot=False,
@@ -157,22 +140,19 @@ def read_data(fake_data=False,
     if fake_data:
         def fake():
             return DataSet(
-                [], [], fake_data=True, one_hot=one_hot, dtype=dtype, seed=seed)
+                [], [], fake_data=True, one_hot=one_hot, dtype=dtype, seed=seed, column_number=0)
 
         train = fake()
         validation = fake()
         test = fake()
-        return base.Datasets(train=train, validation=validation, test=test)
+        return DATASETS(train=train, validation=validation, test=test, column_number=0)
 
-    # len(>0.0) = 2475, len(<=0.0) = 2385, total = 4860
-    stock_data = read_csv('FE539.csv')
-    stock_data['label'] = stock_data['PROFIT'].apply(label_profit)
-    for unit_name in UNIT_NAMES:
-        stock_data[unit_name] = stock_data[unit_name] / stock_data[unit_name].mean()
+    stock_data = read_csv(file_name)
     stock_data = stock_data.sample(frac=1)
 
-    units = stock_data[UNIT_NAMES]
-    labels = stock_data['label'].values
+    units = stock_data[columns]
+    units = pd.DataFrame(MinMaxScaler().fit_transform(units))
+    labels = stock_data[label_name].apply(label_profit).values
 
     test_size = int(len(stock_data) * test_rate)
     validation_size = int(len(stock_data) * validation_rate)
@@ -180,17 +160,18 @@ def read_data(fake_data=False,
     assert test_size > 0
     assert validation_size > 0
 
-    test_units = units[:test_size]
-    validation_units = units[test_size:test_size + validation_size]
     train_units = units[test_size + validation_size:]
-    test_labels = labels[:test_size]
-    validation_labels = labels[test_size:test_size + validation_size]
     train_labels = labels[test_size + validation_size:]
+    test_units = units[:test_size]
+    test_labels = labels[:test_size]
+    validation_units = units[test_size:test_size + validation_size]
+    validation_labels = labels[test_size:test_size + validation_size]
 
-    options = dict(dtype=dtype, seed=seed)
+    options = dict(dtype=dtype, seed=seed, column_number=len(columns), class_number=class_number)
 
     train = DataSet(train_units, train_labels, **options)
     validation = DataSet(validation_units, validation_labels, **options)
     test = DataSet(test_units, test_labels, **options)
 
-    return base.Datasets(train=train, validation=validation, test=test)
+    return DATASETS(train=train, validation=validation, test=test, column_number=len(columns),
+                    class_number=class_number)
