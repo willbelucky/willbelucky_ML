@@ -45,7 +45,7 @@ biases = {
 
 
 def RNN(x, weights, biases):
-    # Prepare data shape to match `rnn` function requirements
+    # Prepare data shape to match `RNN` function requirements
     # Current data input shape: (batch_size, timesteps, n_input)
     # Required shape: 'timesteps' tensors list of shape (batch_size, n_input)
 
@@ -58,7 +58,7 @@ def RNN(x, weights, biases):
     # Get lstm cell output
     outputs, states = rnn.static_rnn(lstm_cell, x, dtype=tf.float32)
 
-    # Linear activation, using rnn inner loop last output
+    # Linear activation, using RNN inner loop last output
     return tf.matmul(outputs[-1], weights['out']) + biases['out']
 
 
