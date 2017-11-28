@@ -47,6 +47,8 @@ class DataSet(object):
             assert units.shape[0] == labels.shape[0], (
                 'units.shape: %s labels.shape: %s' % (units.shape, labels.shape))
             self._num_examples = units.shape[0]
+        self._seed = seed
+        self._dtype = dtype
         self._units = units
         self._labels = labels
         self._epochs_completed = 0
@@ -69,6 +71,14 @@ class DataSet(object):
     @property
     def epochs_completed(self):
         return self._epochs_completed
+
+    @property
+    def dtype(self):
+        return self._dtype
+
+    @property
+    def seed(self):
+        return self._seed
 
     def next_batch(self, batch_size, fake_data=False, shuffle=True):
         """Return the next `batch_size` examples from this data set."""
@@ -126,12 +136,40 @@ def read_csv(file_name):
     return stock_data
 
 
+def to_recurrent_data(data_sets, time_step):
+    options = dict(dtype=data_sets.train.dtype, seed=data_sets.train.seed, column_number=data_sets.column_number,
+                   class_number=data_sets.class_number)
+
+    train = DataSet(dataframe_to_recurrent_ndarray(data_sets.train.units, time_step),
+                    data_sets.train.labels[time_step:], **options)
+    validation = DataSet(dataframe_to_recurrent_ndarray(data_sets.validation.units, time_step),
+                         data_sets.validation.labels[time_step:], **options)
+    test = DataSet(dataframe_to_recurrent_ndarray(data_sets.test.units, time_step),
+                   data_sets.test.labels[time_step:], **options)
+
+    return DATASETS(train=train, validation=validation, test=test, column_number=data_sets.column_number,
+                    class_number=data_sets.class_number)
+
+
+def dataframe_to_recurrent_ndarray(x, time_step):
+    recurrent_panel = []
+    for i in range(0, len(x) - time_step):
+        recurrent_frame = []
+        for index, values in x[i:i + time_step].iterrows():
+            recurrent_frame.append(np.asarray(values))
+
+        recurrent_panel.append(np.asarray(recurrent_frame))
+
+    return np.asarray(recurrent_panel)
+
+
 def read_data(file_name,
               label_name,
               columns,
               class_number,
               label_profit,
               fake_data=False,
+              shuffle=True,
               test_rate=0.25,
               validation_rate=0.1,
               one_hot=False,
@@ -140,15 +178,16 @@ def read_data(file_name,
     if fake_data:
         def fake():
             return DataSet(
-                [], [], fake_data=True, one_hot=one_hot, dtype=dtype, seed=seed, column_number=0)
+                [], [], 0, 0, fake_data=True, one_hot=one_hot, dtype=dtype, seed=seed)
 
         train = fake()
         validation = fake()
         test = fake()
-        return DATASETS(train=train, validation=validation, test=test, column_number=0)
+        return DATASETS(train=train, validation=validation, test=test, column_number=0, class_number=0)
 
     stock_data = read_csv(file_name)
-    stock_data = stock_data.sample(frac=1)
+    if shuffle:
+        stock_data = stock_data.sample(frac=1)
 
     units = stock_data[columns]
     units = pd.DataFrame(MinMaxScaler().fit_transform(units))
