@@ -9,3 +9,12 @@ lezhin/__pycache__/input_data.cpython-36.pyc
 logs/
 mnist_example/__pycache__/
 util/__pycache__/
+.DS_Store
+DNN/__pycache__/
+RNN/__pycache__/
+data/__pycache__/
+lezhin/.DS_Store
+lezhin/__pycache__/lezhin_comics.cpython-36.pyc
+lezhin/data/.DS_Store
+stock/.DS_Store
+stock/__pycache__/
