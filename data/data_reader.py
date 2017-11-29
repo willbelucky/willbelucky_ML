@@ -148,12 +148,15 @@ def read_csv(file_name, company=None):
 
     :return stock_data: (DataFrame)
     """
-    stock_data = pd.read_csv(file_name + '.csv', parse_dates=['date']).dropna()
+    try:
+        stock_data = pd.read_csv(file_name + '.csv', parse_dates=['date']).dropna()
+        stock_data = stock_data.sort_values(by=['date'])
+    except ValueError:
+        stock_data = pd.read_csv(file_name + '.csv').dropna()
 
     if company is not None:
         stock_data = stock_data.loc[stock_data['company'] == company]
 
-    stock_data = stock_data.sort_values(by=['date'])
     return stock_data
 
 
@@ -213,7 +216,10 @@ def read_data(file_name,
     units = stock_data[columns]
     units = pd.DataFrame(MinMaxScaler().fit_transform(units))
     labels = stock_data[label_name].apply(label_profit).values
-    dates = stock_data['date']
+    try:
+        dates = stock_data['date']
+    except KeyError:
+        dates = range(len(units))
 
     test_size = int(len(stock_data) * test_rate)
     train_size = len(stock_data) - test_size

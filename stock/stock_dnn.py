@@ -41,6 +41,12 @@ if __name__ == '__main__':
         help='Name of input csv file without `.csv`.'
     )
     parser.add_argument(
+        '--company',
+        type=str,
+        default=None,
+        help='Name of company.'
+    )
+    parser.add_argument(
         '--label_name',
         type=str,
         default='PROFIT',
@@ -78,12 +84,6 @@ if __name__ == '__main__':
         type=int,
         default=[13, 13],
         help='Number of units in hidden layers.'
-    )
-    parser.add_argument(
-        '--batch_size',
-        type=int,
-        default=100,
-        help='Batch size.  Must divide evenly into the dataset sizes.'
     )
     parser.add_argument(
         '--validation_rate',

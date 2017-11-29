@@ -9,7 +9,7 @@ import sys
 
 import tensorflow as tf
 
-from RNN.regression_lstm import run_training
+from LSTM.regression_lstm import run_training
 
 FLAGS = None
 

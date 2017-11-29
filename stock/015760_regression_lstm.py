@@ -9,27 +9,16 @@ import sys
 
 import tensorflow as tf
 
-from RNN.classifying_lstm import run_training
+from LSTM.regression_lstm import run_training
 
 FLAGS = None
-
-# number of category.
-class_number = 2
-
-
-def label_profit(profit):
-    if profit < 0.0:
-        label = 0
-    else:
-        label = 1
-    return label
 
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    run_training(flags=FLAGS, class_number=class_number, label_profit=label_profit)
+    run_training(flags=FLAGS, is_profit=True)
 
 
 if __name__ == '__main__':
@@ -39,6 +28,12 @@ if __name__ == '__main__':
         type=str,
         default='015760_한국전력',
         help='Name of input csv file without `.csv`.'
+    )
+    parser.add_argument(
+        '--company',
+        type=str,
+        default=None,
+        help='Name of company.'
     )
     parser.add_argument(
         '--label_name',
@@ -84,12 +79,6 @@ if __name__ == '__main__':
         type=int,
         default=1,
         help='The number of time steps.'
-    )
-    parser.add_argument(
-        '--batch_size',
-        type=int,
-        default=100,
-        help='Batch size.  Must divide evenly into the dataset sizes.'
     )
     parser.add_argument(
         '--test_rate',

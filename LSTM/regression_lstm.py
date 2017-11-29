@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :Author: Jaekyoung Kim
-:Date: 2017. 11. 27.
+:Date: 2017. 11. 29.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -10,7 +10,10 @@ from __future__ import print_function
 import math
 import os
 
+import matplotlib
+import matplotlib.pyplot as plt
 import tensorflow as tf
+import numpy as np
 
 from data.data_reader import read_data, to_recurrent_data
 from util import logging
@@ -58,15 +61,14 @@ def do_loss(logits, labels):
     """Calculates the loss from the logits and the labels.
 
     Args:
-      logits: Logits tensor, float - [batch_size, NUM_CLASSES].
-      labels: Labels tensor, int32 - [batch_size].
+      logits: Logits tensor, float32 - [batch_size, NUM_CLASSES].
+      labels: Labels tensor, float32 - [batch_size].
 
     Returns:
       loss: Loss tensor of type float.
     """
-    labels = tf.to_int64(labels)
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='xentropy')
-    return tf.reduce_mean(cross_entropy, name='xentropy_mean')
+    # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='xentropy')
+    return tf.reduce_sum(tf.square(logits - labels))
 
 
 def training(loss, learning_rate):
@@ -102,21 +104,14 @@ def evaluation(logits, labels):
     """Evaluate the quality of the logits at predicting the label.
 
     Args:
-      logits: Logits tensor, float - [batch_size, NUM_CLASSES].
-      labels: Labels tensor, int32 - [batch_size], with values in the
-        range [0, NUM_CLASSES).
+      logits: Logits tensor, float32 - [batch_size, 1].
+      labels: Labels tensor, float32 - [batch_size], with values.
 
     Returns:
-      A scalar int32 tensor with the number of examples (out of batch_size)
+      A scalar float32 tensor with the number of examples (out of batch_size)
       that were predicted correctly.
     """
-    # For a classifier model, we can use the in_top_k Op.
-    # It returns a bool tensor with shape [batch_size] that is true for
-    # the examples where the label is in the top k (here k=1)
-    # of all logits for that example.
-    correct = tf.nn.in_top_k(logits, labels, 1)
-    # Return the number of true entries.
-    return tf.reduce_sum(tf.cast(correct, tf.int32))
+    return tf.reduce_sum(tf.square(logits - labels))
 
 
 def placeholder_inputs(batch_size, time_step, column_number):
@@ -135,7 +130,7 @@ def placeholder_inputs(batch_size, time_step, column_number):
     # unit and label tensors, except the first dimension is now batch_size
     # rather than the full size of the train or test data sets.
     units_placeholder = tf.placeholder(tf.float32, [batch_size, time_step, column_number])
-    labels_placeholder = tf.placeholder(tf.int32, [batch_size])
+    labels_placeholder = tf.placeholder(tf.float32, [batch_size])
     return units_placeholder, labels_placeholder
 
 
@@ -156,13 +151,13 @@ def fill_feed_dict(data_set, units_pl, labels_pl, flags):
     """
     # Create the feed_dict for the placeholders filled with the next
     # `batch size` examples.
-    units_feed, labels_feed = data_set.next_batch(flags.fake_data,
-                                                  shuffle=False)
+    units_feed, labels_feed, dates_feed = data_set.next_batch(fake_data=flags.fake_data,
+                                                              shuffle=False)
     feed_dict = {
         units_pl: units_feed,
         labels_pl: labels_feed,
     }
-    return feed_dict
+    return feed_dict, labels_feed, dates_feed
 
 
 def do_eval(sess,
@@ -182,34 +177,46 @@ def do_eval(sess,
       flags: Given options.
     """
     # And run one epoch of eval.
-    true_count = 0  # Counts the number of correct predictions.
-    steps_per_epoch = data_set.num_examples // flags.batch_size
-    num_examples = steps_per_epoch * flags.batch_size
+    total_squared_error = 0.0  # Counts the number of correct predictions.
+    steps_per_epoch = data_set.num_examples // data_set.batch_size
+    num_examples = steps_per_epoch * data_set.batch_size
     for step in range(steps_per_epoch):
-        feed_dict = fill_feed_dict(data_set,
-                                   units_placeholder,
-                                   labels_placeholder,
-                                   flags)
-        true_count += sess.run(eval_correct, feed_dict=feed_dict)
-    precision = float(true_count) / num_examples
-    return num_examples, true_count, precision
+        feed_dict, labels_feed, dates_feed = fill_feed_dict(data_set,
+                                                            units_placeholder,
+                                                            labels_placeholder,
+                                                            flags)
+        total_squared_error += sess.run(eval_correct, feed_dict=feed_dict)
+    average_squared_error = float(total_squared_error) / num_examples
+    return average_squared_error
 
 
-def run_training(flags, class_number, label_profit):
+def default_label_managing_function(label):
+    return label
+
+
+def run_training(flags, class_number=1, label_managing_function=default_label_managing_function, is_profit=False):
     """Train mnist_example for a number of steps."""
 
     logger = logging.get_logger('evaluationLogger', flags.log_dir, 'evaluation', logging.INFO)
 
-    # Get the data_sets of units and labels for training, and test.
+    # Get the sets of units and labels for training, validation, and
+    # test on mnist_example.
+    # data_sets = read_data(file_name=flags.file_name, company=flags.company, label_name=flags.label_name,
+    #                       columns=flags.columns,class_number=class_number, label_profit=label_profit,
+    #                       test_rate=flags.test_rate, validation_rate=flags.validation_rate, shuffle=False)
     data_sets = read_data(file_name=flags.file_name, company=flags.company, label_name=flags.label_name,
-                          columns=flags.columns, class_number=class_number, label_profit=label_profit,
+                          columns=flags.columns, class_number=class_number, label_profit=label_managing_function,
                           test_rate=flags.test_rate, shuffle=False)
     data_sets = to_recurrent_data(data_sets, flags.time_step)
+    logger.info("train\ttest")
+    logger.info("{:d}\t{:d}".format(len(data_sets.train.units),
+                                    len(data_sets.test.units)))
+    logger.info("")
 
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
         # Generate placeholders for the units and labels.
-        units_placeholder, labels_placeholder = placeholder_inputs(flags.batch_size, flags.time_step,
+        units_placeholder, labels_placeholder = placeholder_inputs(data_sets.batch_size, flags.time_step,
                                                                    data_sets.column_number)
 
         # Build a Graph that computes predictions from the inference model.
@@ -217,7 +224,7 @@ def run_training(flags, class_number, label_profit):
                            flags.hidden_units,
                            data_sets.column_number,
                            data_sets.class_number,
-                           flags.batch_size,
+                           data_sets.batch_size,
                            flags.dropout)
 
         # Add to the Graph the Ops for loss calculation.
@@ -244,16 +251,16 @@ def run_training(flags, class_number, label_profit):
         logger.info("\t".join(['learning_rate', 'max_steps', 'hidden_units']))
         logger.info("{:f}\t{:d}\t{}".format(flags.learning_rate, flags.max_steps, flags.hidden_units))
         logger.info("")
-        logger.info(" ".join(['step', 'loss_value', 'training_SSE', 'test_SSE']))
+        logger.info(" ".join(['step', 'loss_value', 'training_precision', 'test_precision']))
         # Start the training loop.
         for step in range(flags.max_steps + 1):
 
             # Fill a feed dictionary with the actual set of units and labels
             # for this particular training step.
-            feed_dict = fill_feed_dict(data_sets.train,
-                                       units_placeholder,
-                                       labels_placeholder,
-                                       flags)
+            feed_dict, labels_feed, dates_feed = fill_feed_dict(data_sets.train,
+                                                                units_placeholder,
+                                                                labels_placeholder,
+                                                                flags)
 
             # Run one step of the model.  The return values are the activations
             # from the `train_op` (which is discarded) and the `loss` Op.  To
@@ -264,22 +271,54 @@ def run_training(flags, class_number, label_profit):
                                      feed_dict=feed_dict)
 
             # Save a checkpoint and evaluate the model periodically.
-            if step % (flags.max_steps / 100) == 0:
+            if step % (flags.max_steps / 2) == 0:
                 checkpoint_file = os.path.join(flags.log_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=step)
                 # Evaluate against the training set.
-                training_num_examples, training_true_count, training_precision = do_eval(sess,
-                                                                                         eval_correct,
-                                                                                         units_placeholder,
-                                                                                         labels_placeholder,
-                                                                                         data_sets.train,
-                                                                                         flags)
+                training_average_squared_error = do_eval(sess,
+                                                         eval_correct,
+                                                         units_placeholder,
+                                                         labels_placeholder,
+                                                         data_sets.train,
+                                                         flags)
                 # Evaluate against the test set.
-                test_num_examples, test_true_count, test_precision = do_eval(sess,
-                                                                             eval_correct,
-                                                                             units_placeholder,
-                                                                             labels_placeholder,
-                                                                             data_sets.test,
-                                                                             flags)
-                logger.info("{:d}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_precision,
-                                                            test_precision))
+                test_average_squared_error = do_eval(sess,
+                                                     eval_correct,
+                                                     units_placeholder,
+                                                     labels_placeholder,
+                                                     data_sets.test,
+                                                     flags)
+                logger.info("{:d}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_average_squared_error,
+                                                            test_average_squared_error))
+
+        # Compare labels(targets) with predictions.
+        feed_dict, labels_feed, dates_feed = fill_feed_dict(data_sets.test,
+                                                            units_placeholder,
+                                                            labels_placeholder,
+                                                            flags)
+        test_predictions = sess.run(logits, feed_dict)
+        y_label = 'Result'
+
+        if is_profit:
+            labels_feed = np.array(labels_feed) + 1
+            labels_feed = labels_feed.cumprod()
+            labels_feed = labels_feed - 1
+            test_predictions = np.array(test_predictions) + 1
+            test_predictions = test_predictions.cumprod()
+            test_predictions = test_predictions - 1
+            y_label = 'Profit'
+
+        # draw a test graph
+        matplotlib.rc('font', family='NanumBarunGothicOTF')
+        fig, ax = plt.subplots()
+        ax.plot(dates_feed, labels_feed, 'r', label='target')
+        ax.plot(dates_feed, test_predictions, 'b', label='prediction')
+        ax.legend()
+
+        title = flags.file_name
+        if flags.company is not None:
+            title = title + ", " + flags.company
+        plt.title(title)
+        plt.xlabel('Time Period')
+        plt.ylabel(y_label)
+        plt.show()

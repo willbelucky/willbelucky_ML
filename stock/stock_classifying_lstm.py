@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :Author: Jaekyoung Kim
-:Date: 2017. 11. 28.
+:Date: 2017. 11. 27.
 """
 import argparse
 import os
@@ -9,16 +9,27 @@ import sys
 
 import tensorflow as tf
 
-from RNN.regression_lstm import run_training
+from LSTM.classifying_lstm import run_training
 
 FLAGS = None
+
+# number of category.
+class_number = 2
+
+
+def label_profit(profit):
+    if profit < 0.0:
+        label = 0
+    else:
+        label = 1
+    return label
 
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    run_training(flags=FLAGS)
+    run_training(flags=FLAGS, class_number=class_number, label_profit=label_profit)
 
 
 if __name__ == '__main__':
@@ -26,59 +37,59 @@ if __name__ == '__main__':
     parser.add_argument(
         '--file_name',
         type=str,
-        default='092730_네오팜',
+        default='FE539',
         help='Name of input csv file without `.csv`.'
+    )
+    parser.add_argument(
+        '--company',
+        type=str,
+        default=None,
+        help='Name of company.'
     )
     parser.add_argument(
         '--label_name',
         type=str,
-        default='profit',
+        default='PROFIT',
         help='Label name.'
     )
     parser.add_argument(
         '--columns',
         nargs='+',
         type=str,
-        default=['volume', 'open', 'high', 'low', 'adj_close', 'pre_profit', 'moving_average_2', 'moving_average_3',
-                 'moving_average_5', 'moving_average_10', 'moving_average_20'],
+        default=['INTEREST', 'GAS', 'ROE', 'EPS', 'BPS', 'PER', 'PBR', 'PSR', 'DR', 'ASSET', 'SALES',
+                 'OPERATION_PROFIT', 'CASH_FLOW'],
         help='Names of input columns.'
     )
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.001,
+        default=0.000001,
         help='Initial learning rate.'
     )
     parser.add_argument(
         '--dropout',
         type=float,
-        default=None,
+        default=0.1,
         help='The dropout rate, between 0 and 1. E.g. "rate=0.1" would drop out 10% of input units.'
     )
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=20000,
+        default=2000,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
         '--hidden_units',
         nargs='+',
         type=int,
-        default=[16],
+        default=[13, 15],
         help='Number of units in hidden layers.'
     )
     parser.add_argument(
         '--time_step',
         type=int,
-        default=1,
+        default=7,
         help='The number of time steps.'
-    )
-    parser.add_argument(
-        '--batch_size',
-        type=int,
-        default=100,
-        help='Batch size.  Must divide evenly into the dataset sizes.'
     )
     parser.add_argument(
         '--test_rate',
@@ -101,5 +112,5 @@ if __name__ == '__main__':
     )
 
     FLAGS, unparsed = parser.parse_known_args()
-    # len(>0.0) = 867, len(<=0.0) = 1047, total = 1914
+    # len(>0.0) = 2475, len(<=0.0) = 2385, total = 4860
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

@@ -12,7 +12,7 @@ mnist_example/__pycache__/
 util/__pycache__/
 .DS_Store
 DNN/__pycache__/
-RNN/__pycache__/
+LSTM/__pycache__/
 data/__pycache__/
 lezhin/.DS_Store
 lezhin/__pycache__/lezhin_comics.cpython-36.pyc
