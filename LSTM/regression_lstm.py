@@ -22,7 +22,7 @@ from util import logging
 def lstm_cell(hidden_unit, dropout):
     cell = tf.contrib.rnn.BasicLSTMCell(num_units=hidden_unit, state_is_tuple=True, activation=tf.tanh)
     if dropout is not None:
-        cell = tf.contrib.rnn.DropoutWrapper(cell, output_keep_prob=dropout)
+        cell = tf.contrib.rnn.DropoutWrapper(cell, output_keep_prob=(1 - dropout))
     return cell
 
 
@@ -186,7 +186,7 @@ def do_eval(sess,
                                                             labels_placeholder,
                                                             flags)
         total_squared_error += sess.run(eval_correct, feed_dict=feed_dict)
-    average_squared_error = float(total_squared_error) / num_examples
+    average_squared_error = total_squared_error / num_examples
     return average_squared_error
 
 
@@ -297,6 +297,7 @@ def run_training(flags, class_number=1, label_managing_function=default_label_ma
                                                             labels_placeholder,
                                                             flags)
         test_predictions = sess.run(logits, feed_dict)
+        average_squared_error = sess.run(eval_correct, feed_dict=feed_dict) / data_sets.batch_size
         y_label = 'Result'
 
         if is_profit:
@@ -312,7 +313,7 @@ def run_training(flags, class_number=1, label_managing_function=default_label_ma
         matplotlib.rc('font', family='NanumBarunGothicOTF')
         fig, ax = plt.subplots()
         ax.plot(dates_feed, labels_feed, 'r', label='target')
-        ax.plot(dates_feed, test_predictions, 'b', label='prediction')
+        ax.plot(dates_feed, test_predictions, 'b', label='prediction, {:4.3f}'.format(average_squared_error))
         ax.legend()
 
         title = flags.file_name
