@@ -15,15 +15,17 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 
-DATASETS = collections.namedtuple('Datasets', ['train', 'validation', 'test', 'column_number', 'class_number'])
+DATASETS = collections.namedtuple('Datasets', ['train', 'test', 'column_number', 'class_number', 'batch_size'])
 
 
 class DataSet(object):
     def __init__(self,
                  units,
                  labels,
+                 dates,
                  column_number,
                  class_number,
+                 batch_size=100,
                  fake_data=False,
                  one_hot=False,
                  dtype=dtypes.float32,
@@ -51,6 +53,8 @@ class DataSet(object):
         self._dtype = dtype
         self._units = units
         self._labels = labels
+        self._dates = dates
+        self._batch_size = batch_size
         self._epochs_completed = 0
         self._index_in_epoch = 0
         self.column_number = column_number
@@ -65,8 +69,16 @@ class DataSet(object):
         return self._labels
 
     @property
+    def dates(self):
+        return self._dates
+
+    @property
     def num_examples(self):
         return self._num_examples
+
+    @property
+    def batch_size(self):
+        return self._batch_size
 
     @property
     def epochs_completed(self):
@@ -80,7 +92,7 @@ class DataSet(object):
     def seed(self):
         return self._seed
 
-    def next_batch(self, batch_size, fake_data=False, shuffle=True):
+    def next_batch(self, fake_data=False, shuffle=True):
         """Return the next `batch_size` examples from this data set."""
         if fake_data:
             fake_unit = [1] * self.column_number
@@ -88,9 +100,9 @@ class DataSet(object):
                 fake_label = 1
             else:
                 fake_label = 0
-            return [fake_unit for _ in range(batch_size)], [
-                fake_label for _ in range(batch_size)
-            ]
+            fake_date = [i for i in range(self.column_number)]
+            return [fake_unit for _ in range(self._batch_size)], [fake_label for _ in range(self._batch_size)], [
+                fake_date for _ in range(self._batch_size)]
         start = self._index_in_epoch
         # Shuffle for the first epoch
         if self._epochs_completed == 0 and start == 0 and shuffle:
@@ -98,57 +110,64 @@ class DataSet(object):
             np.random.shuffle(perm0)
             self._units = self.units.iloc[perm0]
             self._labels = self.labels[perm0]
+            self._dates = self.dates[perm0]
         # Go to the next epoch
-        if start + batch_size > self._num_examples:
+        if start + self._batch_size > self._num_examples:
             # Finished epoch
             self._epochs_completed += 1
             # Get the rest examples in this epoch
             rest_num_examples = self._num_examples - start
             units_rest_part = self._units[start:self._num_examples]
             labels_rest_part = self._labels[start:self._num_examples]
+            dates_rest_part = self._dates[start:self._num_examples]
             # Shuffle the data
             if shuffle:
                 perm = np.arange(self._num_examples)
                 np.random.shuffle(perm)
                 self._units = self.units.iloc[perm]
                 self._labels = self.labels[perm]
+                self._dates = self.dates[perm]
             # Start next epoch
             start = 0
-            self._index_in_epoch = batch_size - rest_num_examples
+            self._index_in_epoch = self._batch_size - rest_num_examples
             end = self._index_in_epoch
             units_new_part = self._units[start:end]
             labels_new_part = self._labels[start:end]
+            dates_new_part = self._dates[start:end]
             return np.concatenate((units_rest_part, units_new_part), axis=0), np.concatenate(
-                (labels_rest_part, labels_new_part), axis=0)
+                (labels_rest_part, labels_new_part), axis=0), np.concatenate((dates_rest_part, dates_new_part), axis=0)
         else:
-            self._index_in_epoch += batch_size
+            self._index_in_epoch += self._batch_size
             end = self._index_in_epoch
-            return self._units[start:end], self._labels[start:end]
+            return self._units[start:end], self._labels[start:end], self._dates[start:end]
 
 
-def read_csv(file_name):
+def read_csv(file_name, company=None):
     """
     Read data from file_name.csv and return it as DataFrame without null value.
 
     :return stock_data: (DataFrame)
     """
-    stock_data = pd.read_csv(file_name + '.csv').dropna()
+    stock_data = pd.read_csv(file_name + '.csv', parse_dates=['date']).dropna()
+
+    if company is not None:
+        stock_data = stock_data.loc[stock_data['company'] == company]
+
+    stock_data = stock_data.sort_values(by=['date'])
     return stock_data
 
 
 def to_recurrent_data(data_sets, time_step):
     options = dict(dtype=data_sets.train.dtype, seed=data_sets.train.seed, column_number=data_sets.column_number,
-                   class_number=data_sets.class_number)
+                   class_number=data_sets.class_number, batch_size=(data_sets.batch_size-time_step))
 
     train = DataSet(dataframe_to_recurrent_ndarray(data_sets.train.units, time_step),
-                    data_sets.train.labels[time_step:], **options)
-    validation = DataSet(dataframe_to_recurrent_ndarray(data_sets.validation.units, time_step),
-                         data_sets.validation.labels[time_step:], **options)
+                    data_sets.train.labels[time_step:], data_sets.train.dates[time_step:], **options)
     test = DataSet(dataframe_to_recurrent_ndarray(data_sets.test.units, time_step),
-                   data_sets.test.labels[time_step:], **options)
+                   data_sets.test.labels[time_step:], data_sets.test.dates[time_step:], **options)
 
-    return DATASETS(train=train, validation=validation, test=test, column_number=data_sets.column_number,
-                    class_number=data_sets.class_number)
+    return DATASETS(train=train, test=test, column_number=data_sets.column_number,
+                    class_number=data_sets.class_number, batch_size=(data_sets.batch_size-time_step))
 
 
 def dataframe_to_recurrent_ndarray(x, time_step):
@@ -164,6 +183,7 @@ def dataframe_to_recurrent_ndarray(x, time_step):
 
 
 def read_data(file_name,
+              company,
               label_name,
               columns,
               class_number,
@@ -171,46 +191,46 @@ def read_data(file_name,
               fake_data=False,
               shuffle=True,
               test_rate=0.25,
-              validation_rate=0.1,
               one_hot=False,
               dtype=dtypes.float32,
               seed=None):
     if fake_data:
         def fake():
-            return DataSet(
-                [], [], 0, 0, fake_data=True, one_hot=one_hot, dtype=dtype, seed=seed)
+            return DataSet(units=[], labels=[], dates=[], column_number=0, class_number=0,
+                           fake_data=True, one_hot=one_hot, dtype=dtype, seed=seed)
 
         train = fake()
-        validation = fake()
         test = fake()
-        return DATASETS(train=train, validation=validation, test=test, column_number=0, class_number=0)
+        return DATASETS(train=train, test=test, column_number=0, class_number=0)
 
-    stock_data = read_csv(file_name)
+    stock_data = read_csv(file_name, company=company)
+
+    assert len(stock_data) > 0
+
     if shuffle:
         stock_data = stock_data.sample(frac=1)
 
     units = stock_data[columns]
     units = pd.DataFrame(MinMaxScaler().fit_transform(units))
     labels = stock_data[label_name].apply(label_profit).values
+    dates = stock_data['date']
 
     test_size = int(len(stock_data) * test_rate)
-    validation_size = int(len(stock_data) * validation_rate)
+    train_size = len(stock_data) - test_size
 
     assert test_size > 0
-    assert validation_size > 0
 
-    train_units = units[test_size + validation_size:]
-    train_labels = labels[test_size + validation_size:]
-    test_units = units[:test_size]
-    test_labels = labels[:test_size]
-    validation_units = units[test_size:test_size + validation_size]
-    validation_labels = labels[test_size:test_size + validation_size]
+    train_units = units[:train_size]
+    train_labels = labels[:train_size]
+    train_dates = dates[:train_size]
+    test_units = units[train_size:]
+    test_labels = labels[train_size:]
+    test_dates = dates[train_size:]
 
-    options = dict(dtype=dtype, seed=seed, column_number=len(columns), class_number=class_number)
+    options = dict(dtype=dtype, seed=seed, column_number=len(columns), class_number=class_number, batch_size=test_size)
 
-    train = DataSet(train_units, train_labels, **options)
-    validation = DataSet(validation_units, validation_labels, **options)
-    test = DataSet(test_units, test_labels, **options)
+    train = DataSet(train_units, train_labels, train_dates, **options)
+    test = DataSet(test_units, test_labels, test_dates, **options)
 
-    return DATASETS(train=train, validation=validation, test=test, column_number=len(columns),
-                    class_number=class_number)
+    return DATASETS(train=train, test=test, column_number=len(columns),
+                    class_number=class_number, batch_size=test_size)

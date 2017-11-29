@@ -9,27 +9,16 @@ import sys
 
 import tensorflow as tf
 
-from RNN.classifying_lstm import run_training
+from RNN.regression_lstm import run_training
 
 FLAGS = None
-
-# number of category.
-class_number = 2
-
-
-def label_profit(profit):
-    if profit < 0.0:
-        label = 0
-    else:
-        label = 1
-    return label
 
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    run_training(flags=FLAGS, class_number=class_number, label_profit=label_profit)
+    run_training(flags=FLAGS)
 
 
 if __name__ == '__main__':
@@ -37,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--file_name',
         type=str,
-        default='015760_한국전력',
+        default='092730_네오팜',
         help='Name of input csv file without `.csv`.'
     )
     parser.add_argument(
@@ -57,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.00001,
+        default=0.001,
         help='Initial learning rate.'
     )
     parser.add_argument(
@@ -112,5 +101,5 @@ if __name__ == '__main__':
     )
 
     FLAGS, unparsed = parser.parse_known_args()
-    # len(>0.0) = 877, len(<=0.0) = 1037, total = 1914
+    # len(>0.0) = 867, len(<=0.0) = 1047, total = 1914
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

@@ -92,12 +92,6 @@ if __name__ == '__main__':
         help='Batch size.  Must divide evenly into the dataset sizes.'
     )
     parser.add_argument(
-        '--validation_rate',
-        type=float,
-        default=0.1,
-        help='Validation rate. The portion of validate set.'
-    )
-    parser.add_argument(
         '--test_rate',
         type=float,
         default=0.25,

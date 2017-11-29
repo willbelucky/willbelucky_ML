@@ -156,8 +156,7 @@ def fill_feed_dict(data_set, units_pl, labels_pl, flags):
     """
     # Create the feed_dict for the placeholders filled with the next
     # `batch size` examples.
-    units_feed, labels_feed = data_set.next_batch(flags.batch_size,
-                                                  flags.fake_data,
+    units_feed, labels_feed = data_set.next_batch(flags.fake_data,
                                                   shuffle=False)
     feed_dict = {
         units_pl: units_feed,
@@ -201,11 +200,10 @@ def run_training(flags, class_number, label_profit):
 
     logger = logging.get_logger('evaluationLogger', flags.log_dir, 'evaluation', logging.INFO)
 
-    # Get the sets of units and labels for training, validation, and
-    # test on mnist_example.
-    data_sets = read_data(file_name=flags.file_name, label_name=flags.label_name, columns=flags.columns,
-                          class_number=class_number, label_profit=label_profit, test_rate=flags.test_rate,
-                          validation_rate=flags.validation_rate, shuffle=False)
+    # Get the data_sets of units and labels for training, and test.
+    data_sets = read_data(file_name=flags.file_name, company=flags.company, label_name=flags.label_name,
+                          columns=flags.columns, class_number=class_number, label_profit=label_profit,
+                          test_rate=flags.test_rate, shuffle=False)
     data_sets = to_recurrent_data(data_sets, flags.time_step)
 
     # Tell TensorFlow that the model will be built into the default Graph.
@@ -246,7 +244,7 @@ def run_training(flags, class_number, label_profit):
         logger.info("\t".join(['learning_rate', 'max_steps', 'hidden_units']))
         logger.info("{:f}\t{:d}\t{}".format(flags.learning_rate, flags.max_steps, flags.hidden_units))
         logger.info("")
-        logger.info(" ".join(['step', 'loss_value', 'training_precision', 'validation_precision', 'test_precision']))
+        logger.info(" ".join(['step', 'loss_value', 'training_SSE', 'test_SSE']))
         # Start the training loop.
         for step in range(flags.max_steps + 1):
 
@@ -276,13 +274,6 @@ def run_training(flags, class_number, label_profit):
                                                                                          labels_placeholder,
                                                                                          data_sets.train,
                                                                                          flags)
-                # Evaluate against the validation set.
-                validation_num_examples, validation_true_count, validation_precision = do_eval(sess,
-                                                                                               eval_correct,
-                                                                                               units_placeholder,
-                                                                                               labels_placeholder,
-                                                                                               data_sets.validation,
-                                                                                               flags)
                 # Evaluate against the test set.
                 test_num_examples, test_true_count, test_precision = do_eval(sess,
                                                                              eval_correct,
@@ -290,5 +281,5 @@ def run_training(flags, class_number, label_profit):
                                                                              labels_placeholder,
                                                                              data_sets.test,
                                                                              flags)
-                logger.info("{:d}\t{:f}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_precision,
-                                                                  validation_precision, test_precision))
+                logger.info("{:d}\t{:f}\t{:f}\t{:f}".format(step, loss_value, training_precision,
+                                                            test_precision))

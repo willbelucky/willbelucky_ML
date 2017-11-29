@@ -9,27 +9,16 @@ import sys
 
 import tensorflow as tf
 
-from RNN.classifying_lstm import run_training
+from RNN.regression_lstm import run_training
 
 FLAGS = None
-
-# number of category.
-class_number = 2
-
-
-def label_profit(profit):
-    if profit < 0.0:
-        label = 0
-    else:
-        label = 1
-    return label
 
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    run_training(flags=FLAGS, class_number=class_number, label_profit=label_profit)
+    run_training(flags=FLAGS)
 
 
 if __name__ == '__main__':
